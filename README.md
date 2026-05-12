@@ -2,6 +2,8 @@
 
 Dashboard interativo de Machine Learning para previsao de cancelamento de clientes de telecomunicacoes.
 
+https://previsaochurn-jak75owqgseod6htnfnrre.streamlit.app
+
 ## Sobre o Projeto
 
 Este projeto analisa dados de 7.043 clientes de uma operadora de telecomunicacoes para identificar padroes de cancelamento (churn) e prever quais clientes tem maior probabilidade de sair.
