@@ -14,6 +14,7 @@ from sklearn.metrics import (
     roc_auc_score,
     roc_curve,
 )
+from sklearn.impute import SimpleImputer
 from sklearn.model_selection import cross_val_score
 from imblearn.over_sampling import SMOTE
 from xgboost import XGBClassifier
@@ -25,6 +26,17 @@ from src.eda import apply_layout, COLOR_PRIMARY, COLOR_SECONDARY, COLOR_DANGER, 
 
 def train_models(X_train, y_train, X_test, y_test):
     """Treina 3 modelos e retorna resultados comparativos."""
+    imputer = SimpleImputer(strategy="median")
+    X_train = pd.DataFrame(
+        imputer.fit_transform(X_train),
+        columns=X_train.columns,
+        index=X_train.index,
+    )
+    X_test = pd.DataFrame(
+        imputer.transform(X_test),
+        columns=X_test.columns,
+        index=X_test.index,
+    )
 
     # SMOTE para balanceamento
     smote = SMOTE(random_state=42)

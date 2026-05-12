@@ -11,11 +11,10 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     # TotalCharges tem espaços em branco (11 registros com tenure=0)
-    df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
-    df["TotalCharges"].fillna(0, inplace=True)
+    df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce").fillna(0)
 
     # Converter SeniorCitizen para categórico legível
-    df["SeniorCitizen"] = df["SeniorCitizen"].map({0: "No", 1: "Yes"})
+    df["SeniorCitizen"] = df["SeniorCitizen"].replace({0: "No", 1: "Yes", "0": "No", "1": "Yes"})
 
     # Remover customerID (não é feature)
     df.drop(columns=["customerID"], inplace=True)
@@ -59,7 +58,7 @@ def encode_data(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     encoders = {}
 
     # Target
-    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0})
+    df["Churn"] = df["Churn"].map({"Yes": 1, "No": 0, 1: 1, 0: 0}).astype(int)
 
     # Colunas categóricas
     cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
@@ -74,7 +73,7 @@ def encode_data(df: pd.DataFrame) -> tuple[pd.DataFrame, dict]:
     # One-hot para multi-valor
     multi_cols = [c for c in cat_cols if c not in binary_cols]
     if multi_cols:
-        df = pd.get_dummies(df, columns=multi_cols, drop_first=True)
+        df = pd.get_dummies(df, columns=multi_cols, drop_first=True, dtype=int)
 
     return df, encoders
 
@@ -84,18 +83,20 @@ def prepare_splits(df: pd.DataFrame, target: str = "Churn", test_size: float = 0
     X = df.drop(columns=[target])
     y = df[target]
 
-    # Remover colunas não-numéricas remanescentes
-    X = X.select_dtypes(include=[np.number])
+    # Garantir matriz numerica e sem ausentes antes de scaler/SMOTE.
+    X = X.apply(pd.to_numeric, errors="coerce").fillna(0).astype(float)
 
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=42, stratify=y
     )
+    X_train = X_train.copy()
+    X_test = X_test.copy()
 
     scaler = StandardScaler()
     num_cols = ["tenure", "MonthlyCharges", "TotalCharges", "avg_monthly_charge", "num_services"]
     num_cols = [c for c in num_cols if c in X_train.columns]
-    X_train[num_cols] = scaler.fit_transform(X_train[num_cols])
-    X_test[num_cols] = scaler.transform(X_test[num_cols])
+    X_train.loc[:, num_cols] = scaler.fit_transform(X_train[num_cols])
+    X_test.loc[:, num_cols] = scaler.transform(X_test[num_cols])
 
     return X_train, X_test, y_train, y_test, scaler
 
